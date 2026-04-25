@@ -1,0 +1,47 @@
+# MongoDB + API. From repo root: docker compose up --build
+# Frontend still runs on the host (e.g. npm run dev in frontend) unless you add a web service later.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "db.adminCommand({ ping: 1 }).ok",
+          "mongodb://127.0.0.1:27017",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: "4000"
+      MONGO_URI: mongodb://mongo:27017/api-client
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      NODE_ENV: ${NODE_ENV:-development}
+      # Browser origin for CORS (Vite on host). Docker Desktop: host.docker.internal also works.
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
