@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { api } from '../api/client.js';
 
 export function ShareView() {
   const { token } = useParams();
@@ -10,9 +11,7 @@ export function ShareView() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/collections/shared/${token}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || 'Not found');
+        const data = await api(`/api/collections/shared/${token}`);
         if (!cancelled) setCollection(data.collection);
       } catch (e) {
         if (!cancelled) setErr(e.message);
